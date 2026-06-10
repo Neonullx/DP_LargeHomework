@@ -1,0 +1,32 @@
+# ===== Videos (upload to Bilibili instead) =====
+videos/
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# ===== OS files =====
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ===== IDE =====
+.vscode/
+.idea/
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+
+# ===== ML outputs (large files) =====
+outputs/
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+wandb/

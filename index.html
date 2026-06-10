@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Policy 复现 — Visuomotor Policy Learning via Action Diffusion</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+</script>
+<style>
+/* ===== Reset & Base ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #08080f;
+  color: #d0d0d8;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ===== Typography ===== */
+h1, h2, h3 { font-weight: 700; color: #f0f0f5; line-height: 1.3; }
+h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+h2 { font-size: clamp(1.4rem, 3vw, 2rem); }
+h3 { font-size: 1.1rem; }
+a { color: #7ec8f8; text-decoration: none; transition: color .2s; }
+a:hover { color: #a0d8ff; }
+
+/* ===== Layout ===== */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+section { padding: 5rem 0; }
+.section-title {
+  text-align: center; margin-bottom: 3rem;
+  background: linear-gradient(135deg, #7ec8f8 0%, #a78bfa 50%, #f472b6 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== Background Effects ===== */
+.bg-grid {
+  position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.bg-glow {
+  position: fixed; z-index: -1; pointer-events: none;
+  width: 600px; height: 600px; border-radius: 50%;
+  filter: blur(180px); opacity: .12;
+  background: radial-gradient(circle, #7ec8f8 0%, transparent 70%);
+  top: -200px; right: -100px;
+}
+.bg-glow:nth-child(3) {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, #a78bfa 0%, transparent 70%);
+  bottom: 400px; left: -100px; top: auto; right: auto;
+}
+
+/* ===== Hero ===== */
+.hero {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  text-align: center; position: relative;
+}
+.hero .badge {
+  display: inline-block; padding: .35rem 1rem;
+  border: 1px solid rgba(126,200,248,.3);
+  border-radius: 20px; font-size: .85rem; color: #7ec8f8;
+  margin-bottom: 1.5rem;
+  background: rgba(126,200,248,.06);
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  background: linear-gradient(135deg, #e0e7ff 0%, #7ec8f8 40%, #a78bfa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 1rem;
+}
+.hero .subtitle { font-size: 1.1rem; color: #8888a0; max-width: 600px; margin: 0 auto 2rem; }
+.hero .paper-ref {
+  font-size: .9rem; color: #6a6a80;
+  background: rgba(255,255,255,.04); display: inline-block;
+  padding: .5rem 1.2rem; border-radius: 8px;
+}
+.hero .links { margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+.hero .links a {
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .6rem 1.5rem; border-radius: 8px; font-size: .9rem;
+  transition: all .25s; font-weight: 500;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: #fff !important; border: none;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(99,102,241,.3); }
+.btn-outline {
+  border: 1px solid rgba(255,255,255,.15); color: #c0c0d0 !important;
+}
+.btn-outline:hover { border-color: #7ec8f8; background: rgba(126,200,248,.06); }
+
+/* ===== Abstract ===== */
+.abstract-card {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 16px; padding: 2.5rem; max-width: 850px; margin: 0 auto;
+}
+.abstract-card p { margin-bottom: 1rem; }
+.abstract-card p:last-child { margin-bottom: 0; }
+
+/* ===== Config Cards ===== */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+.config-card {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px; padding: 1.2rem 1.3rem;
+  transition: border-color .25s;
+}
+.config-card:hover { border-color: rgba(126,200,248,.2); }
+.config-card .label { font-size: .78rem; color: #6a6a80; text-transform: uppercase; letter-spacing: .05em; }
+.config-card .value { font-size: 1.15rem; font-weight: 700; color: #e8e8f0; margin-top: .25rem; }
+
+/* ===== Charts ===== */
+.charts-section { display: flex; flex-direction: column; gap: 2.5rem; }
+.chart-wrapper {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.06); border-radius: 16px;
+  padding: 1.5rem;
+}
+.chart-wrapper h3 { margin-bottom: 1rem; font-size: 1rem; color: #b0b0c0; }
+.chart-container { position: relative; width: 100%; height: 320px; }
+.chart-container canvas { width: 100% !important; height: 100% !important; }
+
+/* ===== Video Gallery ===== */
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+.video-card {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
+  border-radius: 16px; overflow: hidden;
+  transition: border-color .25s, transform .25s;
+}
+.video-card:hover { border-color: rgba(126,200,248,.2); transform: translateY(-3px); }
+.video-card .video-info { padding: 1.2rem; }
+.video-card .video-title { font-weight: 600; color: #e0e0ea; margin-bottom: .2rem; }
+.video-card .video-desc { font-size: .85rem; color: #7a7a90; }
+.video-embed {
+  position: relative; width: 100%; padding-top: 56.25%;
+  background: #0a0a14;
+}
+.video-embed iframe, .video-embed .placeholder {
+  position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+}
+.video-embed .placeholder {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #5a5a70; font-size: .85rem; gap: .5rem;
+}
+.video-embed .placeholder .icon { font-size: 2.5rem; opacity: .4; }
+
+/* ===== Conclusion ===== */
+.conclusion-card {
+  background: linear-gradient(135deg, rgba(59,130,246,.06), rgba(139,92,246,.06));
+  border: 1px solid rgba(126,200,248,.15); border-radius: 16px;
+  padding: 2.5rem; max-width: 850px; margin: 0 auto;
+}
+.conclusion-card ul { padding-left: 1.3rem; }
+.conclusion-card li { margin-bottom: .6rem; }
+.conclusion-card li::marker { color: #7ec8f8; }
+
+/* ===== Footer ===== */
+.footer {
+  text-align: center; padding: 3rem 0; border-top: 1px solid rgba(255,255,255,.05);
+  color: #5a5a70; font-size: .85rem;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  section { padding: 3rem 0; }
+  .config-grid { grid-template-columns: repeat(2, 1fr); }
+  .video-grid { grid-template-columns: 1fr; }
+  .chart-container { height: 250px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+<div class="bg-glow"></div>
+
+<!-- ===== Hero ===== -->
+<section class="hero">
+  <div class="container">
+    <div class="badge">🎓 机器学习大作业 · 论文复现</div>
+    <h1>Diffusion Policy<br>Visuomotor Policy Learning via Action Diffusion</h1>
+    <p class="subtitle">
+      基于 LeRobot 框架复现 Diffusion Policy 在 PushT 任务上的训练与推理，包含完整的训练过程、消融实验和视频演示。
+    </p>
+    <div class="paper-ref">
+      📄 Chi, C. et al. "Diffusion Policy: Visuomotor Policy Learning via Action Diffusion" — RSS 2023
+    </div>
+    <div class="links">
+      <a href="https://arxiv.org/abs/2303.04137" target="_blank" class="btn-outline">📄 论文</a>
+      <a href="https://diffusion-policy.cs.columbia.edu/" target="_blank" class="btn-outline">🌐 官网</a>
+      <a href="https://github.com/huggingface/lerobot" target="_blank" class="btn-outline">🤖 LeRobot</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Abstract ===== -->
+<section>
+  <div class="container">
+    <div class="abstract-card">
+      <h2 style="margin-bottom:1.2rem;text-align:left;">📖 简介</h2>
+      <p>
+        <strong>Diffusion Policy</strong> 是一种将扩散模型引入机器人视觉运动策略学习的新范式。
+        与传统的直接预测动作不同，Diffusion Policy 通过迭代去噪过程从噪声中逐步生成高质量的动作序列，
+        从而优雅地处理多模态动作分布，并展现出令人印象深刻的时空平滑性。
+      </p>
+      <p>
+        本复现项目使用 <strong>HuggingFace LeRobot</strong> 框架在 <strong>PushT</strong> 基准任务上进行训练。
+        PushT 任务要求机器人末端推动一个 T 形块到目标位置，是一个经典的机器人学习基准。
+        我们完成了 <strong>80,000 步</strong>训练（约 97 个 epoch），并进行了多组消融实验来验证 Diffusion Policy 的关键设计选择。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Training Config ===== -->
+<section>
+  <div class="container">
+    <h2 class="section-title">⚙️ 训练配置</h2>
+    <div class="config-grid" id="config-grid"></div>
+  </div>
+</section>
+
+<!-- ===== Training Curves ===== -->
+<section>
+  <div class="container">
+    <h2 class="section-title">📈 训练曲线</h2>
+    <div class="charts-section">
+      <div class="chart-wrapper">
+        <h3>🔻 Loss (MSE)</h3>
+        <div class="chart-container"><canvas id="chart-loss"></canvas></div>
+      </div>
+      <div class="chart-wrapper">
+        <h3>📐 Gradient Norm</h3>
+        <div class="chart-container"><canvas id="chart-gradnorm"></canvas></div>
+      </div>
+      <div class="chart-wrapper">
+        <h3>📉 Learning Rate (Cosine Schedule)</h3>
+        <div class="chart-container"><canvas id="chart-lr"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Video Gallery ===== -->
+<section>
+  <div class="container">
+    <h2 class="section-title">🎬 实验视频</h2>
+    <p style="text-align:center;color:#6a6a80;margin-top:-2rem;margin-bottom:2rem;font-size:.9rem;">
+      将视频上传至 Bilibili 后，替换下方的 <code>BV_XXX</code> 为你的视频 BV 号即可播放
+    </p>
+    <div class="video-grid" id="video-grid"></div>
+  </div>
+</section>
+
+<!-- ===== Conclusion ===== -->
+<section>
+  <div class="container">
+    <h2 class="section-title">🔍 复现总结</h2>
+    <div class="conclusion-card">
+      <ul>
+        <li><strong>训练收敛：</strong>Loss 从 0.515 稳定下降至 0.002，整个过程平滑收敛，未见明显震荡。</li>
+        <li><strong>Gradient Norm：</strong>从初始的 3.25 逐渐下降至约 0.05，表明模型参数稳定，训练健康。</li>
+        <li><strong>Cosine LR Schedule：</strong>学习率从 1e-4 衰减至 5.2e-10，配合 500 步 warmup 保证了初期稳定性和后期精细收敛。</li>
+        <li><strong>训练耗时：</strong>约 6 小时 10 分钟（2×GPU），共处理约 10M 样本，完成 97 个 epoch。</li>
+        <li><strong>消融实验：</strong>验证了 DDIM 推理步数、观测 Horizon、相机视角和 BatchNorm 冻结策略对策略性能的影响。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Footer ===== -->
+<div class="footer">
+  <div class="container">
+    <p>ML Course Project · Diffusion Policy Reproduction · Built with Chart.js · Hosted on GitHub Pages</p>
+  </div>
+</div>
+
+<!-- ===== Scripts ===== -->
+<script src="training_data.js"></script>
+<script>
+// --- Config Cards ---
+(function renderConfig() {
+  const cfg = TRAINING_DATA.config;
+  const items = [
+    ['Task', 'PushT'],
+    ['Model', 'Diffusion Policy (UNet)'],
+    ['Total Steps', '80,000 (80K)'],
+    ['Parameters', cfg.num_params],
+    ['Batch Size', `${cfg.batch_size} (${cfg.batch_size_per_gpu}×${cfg.num_gpus} GPU)`],
+    ['LR Scheduler', 'Cosine + 500 Warmup'],
+    ['Inference Steps', `${cfg.num_inference_steps} (DDIM)`],
+    ['Train Timesteps', cfg.num_train_timesteps],
+    ['Action Horizon', `${cfg.n_action_steps} steps`],
+    ['Obs Steps', cfg.n_obs_steps],
+    ['Dataset', `${cfg.dataset_frames.toLocaleString()} frames / ${cfg.dataset_episodes} eps`],
+    ['Eval Freq', `Every ${cfg.eval_freq.toLocaleString()} steps`],
+    ['Training Time', `Start: ${cfg.training_start}<br>End: ${cfg.training_end}`],
+    ['Final Loss', cfg.final_loss],
+    ['Final Grad Norm', cfg.final_grad_norm],
+    ['Total Epochs', cfg.total_epochs],
+  ];
+  const grid = document.getElementById('config-grid');
+  items.forEach(([label, value]) => {
+    const card = document.createElement('div');
+    card.className = 'config-card';
+    card.innerHTML = `<div class="label">${label}</div><div class="value">${value}</div>`;
+    grid.appendChild(card);
+  });
+})();
+
+// --- Chart.js common options ---
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: { mode: 'index', intersect: false },
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: 'rgba(20,20,30,.95)',
+      titleColor: '#e0e0ea',
+      bodyColor: '#c0c0d0',
+      borderColor: 'rgba(255,255,255,.1)',
+      borderWidth: 1,
+    },
+  },
+  scales: {
+    x: {
+      type: 'linear',
+      title: { display: true, text: 'Training Steps', color: '#7a7a90' },
+      grid: { color: 'rgba(255,255,255,.04)' },
+      ticks: { color: '#7a7a90', callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' : v },
+    },
+    y: {
+      title: { display: true, color: '#7a7a90' },
+      grid: { color: 'rgba(255,255,255,.04)' },
+      ticks: { color: '#7a7a90' },
+    },
+  },
+};
+
+function gradient(ctx, color1, color2) {
+  const g = ctx.createLinearGradient(0, 0, 0, 320);
+  g.addColorStop(0, color1);
+  g.addColorStop(1, color2);
+  return g;
+}
+
+const steps = TRAINING_DATA.metrics.map(d => d.step);
+const commonX = { ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' : v } };
+
+// --- Chart 1: Loss ---
+(function() {
+  const ctx = document.getElementById('chart-loss').getContext('2d');
+  const data = TRAINING_DATA.metrics.map(d => d.loss);
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: steps,
+      datasets: [{
+        data,
+        borderColor: '#f472b6',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: gradient(ctx, 'rgba(244,114,182,.25)', 'rgba(244,114,182,.01)'),
+      }],
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ...chartDefaults.scales.x, ticks: commonX.ticks },
+        y: { ...chartDefaults.scales.y, title: { ...chartDefaults.scales.y.title, text: 'MSE Loss' } },
+      },
+    },
+  });
+})();
+
+// --- Chart 2: Gradient Norm ---
+(function() {
+  const ctx = document.getElementById('chart-gradnorm').getContext('2d');
+  const data = TRAINING_DATA.metrics.map(d => d.grad_norm);
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: steps,
+      datasets: [{
+        data,
+        borderColor: '#a78bfa',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: gradient(ctx, 'rgba(167,139,250,.25)', 'rgba(167,139,250,.01)'),
+      }],
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ...chartDefaults.scales.x, ticks: commonX.ticks },
+        y: { ...chartDefaults.scales.y, title: { ...chartDefaults.scales.y.title, text: 'Gradient Norm' } },
+      },
+    },
+  });
+})();
+
+// --- Chart 3: Learning Rate ---
+(function() {
+  const ctx = document.getElementById('chart-lr').getContext('2d');
+  const data = TRAINING_DATA.metrics.map(d => d.lr);
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: steps,
+      datasets: [{
+        data,
+        borderColor: '#7ec8f8',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: true,
+        backgroundColor: gradient(ctx, 'rgba(126,200,248,.2)', 'rgba(126,200,248,.01)'),
+      }],
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { ...chartDefaults.scales.x, ticks: commonX.ticks },
+        y: {
+          ...chartDefaults.scales.y,
+          title: { ...chartDefaults.scales.y.title, text: 'Learning Rate' },
+          type: 'logarithmic',
+          ticks: {
+            color: '#7a7a90',
+            callback: v => typeof v === 'number' ? v.toExponential(0) : v,
+          },
+        },
+      },
+    },
+  });
+})();
+
+// --- Video Gallery ---
+(function renderVideos() {
+  const videos = [
+    {
+      title: 'DP End-to-End (主实验)',
+      desc: 'Diffusion Policy 完整端到端推理过程，包含去噪可视化和机器人执行轨迹。',
+      bvid: 'BV_XXXXXXXXX',
+      file: 'DP_E2E_Main.mp4',
+      size: '243 MB',
+    },
+    {
+      title: 'DP End-to-End (20 Images)',
+      desc: '仅使用 20 张演示图像训练的 DP，验证低数据条件下的策略性能。',
+      bvid: 'BV_XXXXXXXXX',
+      file: 'DP_E2E_20images.mp4',
+      size: '49 MB',
+    },
+    {
+      title: '10 步推理法 (Fast Inference)',
+      desc: '将 DDIM 推理步数从 20 减少至 10，观察推理速度与策略质量的权衡。',
+      bvid: 'BV_XXXXXXXXX',
+      file: '10步推理法.mp4',
+      size: '36 MB',
+    },
+    {
+      title: 'DP vs ACT 对比',
+      desc: 'Diffusion Policy 与 Action Chunking Transformer (ACT) 的行为对比。',
+      bvid: 'BV_XXXXXXXXX',
+      file: 'DP_ACT.mp4',
+      size: '32 MB',
+    },
+    {
+      title: 'Horizon 消融实验',
+      desc: '对比不同观测 Horizon（预测步数）对策略成功率的影响。',
+      bvid: 'BV_XXXXXXXXX',
+      file: 'Horizon.mp4',
+      size: '32 MB',
+    },
+    {
+      title: 'Frozen BatchNorm SURE',
+      desc: '冻结 BatchNorm 统计量的消融实验，验证训练/推理一致性假设。',
+      bvid: 'BV_XXXXXXXXX',
+      file: 'FrozenBNSURE.mp4',
+      size: '44 MB',
+    },
+    {
+      title: '单相机实验',
+      desc: '仅使用单视角相机输入的消融实验，对比多视角输入的性能差异。',
+      bvid: 'BV_XXXXXXXXX',
+      file: '单相机.mp4',
+      size: '39 MB',
+    },
+  ];
+
+  const grid = document.getElementById('video-grid');
+  videos.forEach((v, i) => {
+    const card = document.createElement('div');
+    card.className = 'video-card';
+    // Use Bilibili embed with user-replaceable BV ID
+    card.innerHTML = `
+      <div class="video-embed">
+        <iframe
+          src="//player.bilibili.com/player.html?bvid=${v.bvid}&page=1&high_quality=1&autoplay=0"
+          scrolling="no" border="0" frameborder="no" framespacing="0"
+          allowfullscreen="true" loading="lazy"
+          title="${v.title}">
+        </iframe>
+      </div>
+      <div class="video-info">
+        <div class="video-title">${i + 1}. ${v.title}</div>
+        <div class="video-desc">${v.desc}</div>
+        <div style="margin-top:.5rem;font-size:.75rem;color:#4a4a60;">
+          📁 ${v.file} · ${v.size} · BV号: <code style="color:#7ec8f8;">${v.bvid}</code>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+})();
+</script>
+
+</body>
+</html>
