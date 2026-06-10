@@ -520,13 +520,13 @@ const mainVideos = [
   {
     title: 'DP End-to-End — 完整推理',
     desc: 'Diffusion Policy 端到端推理全过程演示：从噪声逐步去噪生成动作序列，机器人平滑执行 PushT 任务。这是本复现的核心结果。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_E2E_Main.mp4', size: '233 MB',
+    bvid: 'BV1jQEo6zEuU', file: 'DP_E2E_Main.mp4', size: '233 MB',
     tags: [{text:'核心实验', cls:'badge-blue'}, {text:'20 DDIM Steps', cls:'badge-blue'}],
   },
   {
     title: 'DP End-to-End — 少样本 (20 Images)',
     desc: '仅使用 20 张演示图像训练的 Diffusion Policy，验证在极低数据量条件下策略仍能学到合理的 PushT 行为。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_E2E_20images.mp4', size: '47 MB',
+    bvid: 'BV1jQEo6zE6H', file: 'DP_E2E_20images.mp4', size: '47 MB',
     tags: [{text:'核心实验', cls:'badge-blue'}, {text:'Low Data', cls:'badge-blue'}],
   },
 ];
@@ -538,7 +538,7 @@ const compVideos = [
   {
     title: 'DP vs ACT 对比',
     desc: 'Diffusion Policy 与 Action Chunking Transformer (ACT) 在同一 PushT 任务上的行为对比，展示两种方法的动作生成差异。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_ACT.mp4', size: '31 MB',
+    bvid: 'BV1iQEo6zEQo', file: 'DP_ACT.mp4', size: '31 MB',
     tags: [{text:'对比实验', cls:'badge-gray'}],
   },
 ];
@@ -550,25 +550,25 @@ const ablationVideos = [
   {
     title: '10 步快速推理',
     desc: '将 DDIM 推理步数从 20 缩减至 10，验证推理速度与策略质量之间的权衡关系。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_10步推理.mp4', size: '35 MB',
+    bvid: 'BV1jQEo6zEEY', file: 'DP_10步推理.mp4', size: '35 MB',
     tags: [{text:'消融', cls:'badge-gray'}, {text:'DDIM Steps', cls:'badge-gray'}],
   },
   {
     title: 'Horizon = 16',
     desc: '将 Action Horizon 从 32 缩减至 16，探究预测长度对策略时序一致性和成功率的影响。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_Horizon16.mp4', size: '31 MB',
+    bvid: 'BV1jQEo6zEri', file: 'DP_Horizon16.mp4', size: '31 MB',
     tags: [{text:'消融', cls:'badge-gray'}, {text:'Action Horizon', cls:'badge-gray'}],
   },
   {
     title: 'Frozen BatchNorm',
     desc: '冻结 BatchNorm 统计量（训练/推理一致），验证 BN 统计量对齐对 Diffusion Policy 推理稳定性的影响。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_FrozenBN.mp4', size: '43 MB',
+    bvid: 'BV1jQEo6zEE8', file: 'DP_FrozenBN.mp4', size: '43 MB',
     tags: [{text:'消融', cls:'badge-gray'}, {text:'BatchNorm', cls:'badge-gray'}],
   },
   {
     title: '单相机视角',
     desc: '仅使用单个相机输入的消融实验，对比多视角融合对策略空间感知能力的贡献。',
-    bvid: 'BV_XXXXXXXXX', file: 'DP_单相机.mp4', size: '38 MB',
+    bvid: 'BV1jQEo6zEdc', file: 'DP_单相机.mp4', size: '38 MB',
     tags: [{text:'消融', cls:'badge-gray'}, {text:'Camera View', cls:'badge-gray'}],
   },
 ];
