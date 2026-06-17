@@ -416,12 +416,13 @@ section { padding: 4rem 0; }
     <h2 class="section-title">复现总结</h2>
     <div class="section-divider"></div>
     <div class="summary">
+      <p style="margin-bottom:1rem;color:#5a6a7e;">由上方三张训练曲线可见，Diffusion Policy 在 PushT 任务上收敛平稳、训练动力学健康：</p>
       <ul>
-        <li><strong>训练收敛：</strong>Loss 从 0.515 平滑下降至 0.002，整个过程稳定无震荡。</li>
-        <li><strong>梯度健康：</strong>Gradient Norm 从 3.25 → 0.05，训练动力学健康。</li>
-        <li><strong>Cosine LR：</strong>从 1×10⁻⁴ 衰减至 5×10⁻¹⁰，配合 500 步 warmup，初期稳定、后期精细收敛。</li>
-        <li><strong>训练效率：</strong>约 6 小时完成（2×RTX 4090），处理 ~10M 样本，97 epoch，BF16 混合精度下单卡显存仅约 8 GB。</li>
-        <li><strong>消融验证：</strong>验证了 DDIM 推理步数、Action Horizon、相机视角、BatchNorm 冻结策略的影响。</li>
+        <li><strong>MSE Loss：</strong>从 0.515 单调下降至 0.002，全程无震荡、无过拟合迹象，80K 步时仍呈缓慢下降趋势。</li>
+        <li><strong>Gradient Norm：</strong>从 3.25 衰减至 0.05，梯度量级逐步缩小，表明优化已进入平坦极小值区域。</li>
+        <li><strong>Learning Rate (Cosine)：</strong>1×10⁻⁴ → 5×10⁻¹⁰，前 500 步 warmup 保证初期稳定，余弦衰减使后期精细收敛。</li>
+        <li><strong>训练效率：</strong>约 6 小时完成（2×RTX 4090，BF16 混合精度），处理 ~10M 样本 / 97 epoch，单卡显存仅 ~8 GB。</li>
+        <li><strong>消融验证：</strong>系统验证了 DDIM 推理步数（20→10）、Action Horizon（32→16）、相机视角（多→单）、BatchNorm 冻结策略对推理质量的影响。</li>
       </ul>
     </div>
   </div>
