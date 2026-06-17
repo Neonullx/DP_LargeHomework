@@ -646,10 +646,10 @@ const mainVideos = [
     tags: [{text:'核心实验', cls:'badge-blue'}, {text:'20 DDIM Steps', cls:'badge-blue'}],
   },
   {
-    title: 'DP End-to-End — 少样本 (20 Images)',
-    desc: '仅使用 20 张演示图像训练的 Diffusion Policy，验证在极低数据量条件下策略仍能学到合理的 PushT 行为。',
+    title: 'DP End-to-End — 20 次评估合成',
+    desc: '将 20 次独立评估的推理结果合成至同一画面，直观展示 Diffusion Policy 在 PushT 任务上的行为一致性与成功率。',
     bvid: 'BV1jQEo6zE6H', file: 'DP_E2E_20images.mp4', size: '47 MB',
-    tags: [{text:'核心实验', cls:'badge-blue'}, {text:'Low Data', cls:'badge-blue'}],
+    tags: [{text:'核心实验', cls:'badge-blue'}, {text:'20 Trials', cls:'badge-blue'}],
   },
 ];
 const gridMain = document.getElementById('video-main');
