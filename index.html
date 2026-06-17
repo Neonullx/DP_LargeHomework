@@ -171,6 +171,36 @@ section { padding: 4rem 0; }
 .badge-blue { background: #e8f0fe; color: #0051ba; }
 .badge-gray { background: #f0f2f5; color: #5a6a7e; }
 
+/* ===== Env & Param Tables ===== */
+.env-card {
+  background: #fff; border: 1px solid #e8ecf0; border-radius: 8px;
+  padding: 1.5rem 2rem; margin-bottom: 1.5rem;
+}
+.env-card p { color: #3c4a5e; margin-bottom: .6rem; }
+.env-card p:last-child { margin-bottom: 0; }
+.param-table {
+  width: 100%; border-collapse: collapse; margin: .8rem 0 1.8rem;
+  font-size: .88rem;
+}
+.param-table thead th {
+  background: #f0f4fa; color: #1a1a2e; font-weight: 650;
+  padding: .55rem .9rem; text-align: left; border-bottom: 2px solid #d0d8e8;
+  font-size: .8rem; letter-spacing: .03em;
+}
+.param-table tbody td {
+  padding: .45rem .9rem; border-bottom: 1px solid #eef1f5;
+  color: #3c4a5e;
+}
+.param-table tbody tr:hover { background: #fafbfd; }
+.param-table tbody td:first-child {
+  font-family: 'Consolas','SF Mono','Fira Code',monospace;
+  font-size: .82rem; color: #0051ba; white-space: nowrap;
+}
+.param-table tbody td:nth-child(2) {
+  font-family: 'Consolas','SF Mono','Fira Code',monospace;
+  font-size: .82rem; font-weight: 600; color: #2c3e50;
+}
+
 /* ===== Summary ===== */
 .summary {
   background: #fff; border: 1px solid #e8ecf0; border-radius: 8px;
@@ -209,6 +239,7 @@ section { padding: 4rem 0; }
     <div class="logo">Diffusion<span>Policy</span> · 复现</div>
     <nav>
       <a href="#abstract">简介</a>
+      <a href="#env">环境</a>
       <a href="#training">训练</a>
       <a href="#results">实验结果</a>
       <a href="#summary">总结</a>
@@ -222,8 +253,8 @@ section { padding: 4rem 0; }
     <div class="repro-badge">🎓 机器学习大作业 · 论文复现</div>
     <h1>Diffusion Policy:<br>Visuomotor Policy Learning via Action Diffusion</h1>
     <p class="paper-venue">Cheng Chi, Zhenjia Xu, Siyuan Feng, Eric Cousineau, Yilun Du,<br>Benjamin Burchfiel, Russ Tedrake, Shuran Song — <em>RSS 2023</em></p>
-    <p class="author-line"><strong>复现者：</strong>Neonullx</p>
-    <p class="affil">基于 HuggingFace LeRobot 框架 · PushT 基准任务 · 2×GPU 训练 80K steps</p>
+    <p class="author-line"><strong>复现者：</strong>NaiJin Lin</p>
+    <p class="affil">基于 HuggingFace LeRobot 框架 · PushT 基准任务 · 2×RTX 4090 (24GB) 训练 80K steps</p>
     <div class="btn-row">
       <a href="https://arxiv.org/abs/2303.04137" target="_blank" class="btn btn-ghost">📄 论文 (arXiv)</a>
       <a href="https://diffusion-policy.cs.columbia.edu/" target="_blank" class="btn btn-ghost">🌐 项目官网</a>
@@ -252,6 +283,75 @@ section { padding: 4rem 0; }
         各设计选择的贡献。
       </p>
     </div>
+  </div>
+</section>
+
+<!-- ===== Environment ===== -->
+<section id="env">
+  <div class="container">
+    <div class="section-tag">Environment</div>
+    <h2 class="section-title">训练环境与参数</h2>
+    <div class="section-divider"></div>
+    <div class="env-card">
+      <p>
+        本实验基于 <strong>Ubuntu 22.04</strong> 系统，使用 <strong>Conda</strong> 虚拟环境管理依赖，
+        硬件配置为 <strong>2×Nvidia RTX 4090（24GB 显存）</strong>搭配 <strong>128GB 运行内存</strong>。
+        训练框架采用 HuggingFace 开源的 <strong>LeRobot（最新版）</strong>，配合 <strong>Accelerate</strong>
+        库实现高效多 GPU 分布式训练。
+      </p>
+      <p>
+        推理加速采用 <strong>DDIM</strong>，训练时使用 <strong>100 步</strong>扩散过程，
+        推理时仅需 <strong>20 步</strong>去噪，在 RTX 4090 上推理延迟约 <strong>0.05 秒</strong>（约 20 Hz），
+        满足实时控制需求。训练开启 <strong>BF16</strong> 自动混合精度以节省显存并加速计算，
+        实测单卡训练显存占用约 <strong>8 GB</strong>，远未触及 24 GB 上限。
+      </p>
+    </div>
+
+    <h3 style="margin:2rem 0 .8rem;">模型参数</h3>
+    <table class="param-table">
+      <thead>
+        <tr><th style="width:280px">参数</th><th style="width:180px">值</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>policy.type</td><td>diffusion</td><td>策略类型：扩散策略</td></tr>
+        <tr><td>policy.horizon</td><td>64</td><td>动作预测视野 T<sub>p</sub></td></tr>
+        <tr><td>policy.n_action_steps</td><td>32</td><td>单次执行步数 T<sub>a</sub></td></tr>
+        <tr><td>policy.n_obs_steps</td><td>2</td><td>观测视野 T<sub>o</sub></td></tr>
+        <tr><td>policy.down_dims</td><td>[512, 1024, 2048]</td><td>UNet 各层通道数</td></tr>
+        <tr><td>policy.kernel_size</td><td>5</td><td>1D 卷积核大小</td></tr>
+        <tr><td>policy.diffusion_step_embed_dim</td><td>128</td><td>扩散步嵌入维度</td></tr>
+        <tr><td>policy.noise_scheduler_type</td><td>DDIM</td><td>噪声调度器 (DDPM / DDIM)</td></tr>
+        <tr><td>policy.num_train_timesteps</td><td>100</td><td>训练时扩散步数</td></tr>
+        <tr><td>policy.num_inference_steps</td><td>20</td><td>推理时去噪步数 (DDIM 加速)</td></tr>
+        <tr><td>policy.prediction_type</td><td>epsilon</td><td>预测目标: 噪声 &epsilon;</td></tr>
+        <tr><td>policy.vision_backbone</td><td>resnet18</td><td>视觉骨干网络</td></tr>
+        <tr><td>policy.spatial_softmax_num_keypoints</td><td>32</td><td>空间 Softmax 关键点数</td></tr>
+        <tr><td>policy.use_group_norm</td><td>false</td><td>是否使用 GroupNorm 替代 BatchNorm</td></tr>
+        <tr><td>policy.resize_shape</td><td>[180, 240]</td><td>输入图像缩放尺寸 (H, W)</td></tr>
+        <tr><td>policy.crop_ratio</td><td>0.95</td><td>图像随机裁剪比例</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="margin:2rem 0 .8rem;">训练配置</h3>
+    <table class="param-table">
+      <thead>
+        <tr><th style="width:220px">参数</th><th style="width:160px">值</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>batch_size</td><td>64 (32×2 GPU)</td><td>总批量大小</td></tr>
+        <tr><td>steps</td><td>80,000</td><td>总训练步数</td></tr>
+        <tr><td>optimizer</td><td>AdamW</td><td>优化器类型</td></tr>
+        <tr><td>learning_rate</td><td>1×10<sup>−4</sup></td><td>初始学习率</td></tr>
+        <tr><td>betas</td><td>(0.95, 0.999)</td><td>AdamW 动量参数</td></tr>
+        <tr><td>weight_decay</td><td>1×10<sup>−6</sup></td><td>权重衰减</td></tr>
+        <tr><td>scheduler</td><td>cosine</td><td>学习率调度策略</td></tr>
+        <tr><td>scheduler_warmup_steps</td><td>500</td><td>学习率预热步数</td></tr>
+        <tr><td>mixed_precision</td><td>BF16</td><td>自动混合精度训练</td></tr>
+        <tr><td>num_workers</td><td>16</td><td>数据加载工作进程数</td></tr>
+        <tr><td>save_freq</td><td>10,000</td><td>模型保存频率（步）</td></tr>
+        <tr><td>eval_freq</td><td>10,000</td><td>评估频率（步）</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -288,9 +388,6 @@ section { padding: 4rem 0; }
     <h2 class="section-title">实验结果</h2>
     <div class="section-divider"></div>
 
-    <p style="color:#6a7a8e;font-size:.9rem;margin-bottom:1.5rem;">
-      将视频上传至 Bilibili 后，替换下方 <code>BV_XXXXXXXXX</code> 为你的视频 BV 号即可播放。
-    </p>
 
     <!-- Main Results (C位) -->
     <div class="video-group-title">
@@ -323,7 +420,7 @@ section { padding: 4rem 0; }
         <li><strong>训练收敛：</strong>Loss 从 0.515 平滑下降至 0.002，整个过程稳定无震荡。</li>
         <li><strong>梯度健康：</strong>Gradient Norm 从 3.25 → 0.05，训练动力学健康。</li>
         <li><strong>Cosine LR：</strong>从 1×10⁻⁴ 衰减至 5×10⁻¹⁰，配合 500 步 warmup，初期稳定、后期精细收敛。</li>
-        <li><strong>训练效率：</strong>约 6 小时完成（双 GPU），处理 ~10M 样本，97 epoch。</li>
+        <li><strong>训练效率：</strong>约 6 小时完成（2×RTX 4090），处理 ~10M 样本，97 epoch，BF16 混合精度下单卡显存仅约 8 GB。</li>
         <li><strong>消融验证：</strong>验证了 DDIM 推理步数、Action Horizon、相机视角、BatchNorm 冻结策略的影响。</li>
       </ul>
     </div>
@@ -353,13 +450,24 @@ section { padding: 4rem 0; }
     ['Total Steps', '80,000'],
     ['Parameters', c.num_params],
     ['Batch Size', `${c.batch_size} (${c.batch_size_per_gpu}×${c.num_gpus} GPU)`],
+    ['Optimizer', 'AdamW (β₁=0.95, β₂=0.999)'],
+    ['Weight Decay', '1×10⁻⁶'],
     ['LR Schedule', 'Cosine + 500 Warmup'],
-    ['Inference', `${c.num_inference_steps}-step DDIM`],
+    ['Mixed Precision', 'BF16'],
+    ['Vision Backbone', 'ResNet-18'],
+    ['Prediction Horizon', '64 steps (Tp)'],
+    ['Action Steps', '32 steps (Ta)'],
+    ['Obs Window', `${c.n_obs_steps} steps (To)`],
+    ['UNet Down Dims', '[512, 1024, 2048]'],
+    ['Kernel Size', '5'],
+    ['Diffusion Embed Dim', '128'],
+    ['Noise Scheduler', 'DDIM'],
     ['Train Timesteps', c.num_train_timesteps],
-    ['Action Horizon', `${c.n_action_steps} steps`],
-    ['Obs Window', `${c.n_obs_steps} steps`],
+    ['Inference', `${c.num_inference_steps}-step DDIM`],
+    ['Prediction Type', 'epsilon (噪声预测)'],
+    ['Data Workers', '16'],
     ['Dataset', `${c.dataset_frames.toLocaleString()} frames / ${c.dataset_episodes} eps`],
-    ['Eval', `Every ${c.eval_freq.toLocaleString()} steps × ${c.eval_episodes} eps`],
+    ['Save / Eval Freq', `Every ${c.eval_freq.toLocaleString()} steps`],
     ['Training Time', `${c.training_start} → ${c.training_end}`],
     ['Final Loss', c.final_loss],
     ['Final Grad Norm', c.final_grad_norm],
@@ -465,12 +573,15 @@ const xTicks = { ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' :
 // LR chart
 (function() {
   const ctx = document.getElementById('chart-lr').getContext('2d');
+  const lrData = TRAINING_DATA.metrics.map(d => d.lr);
+  // pick a min slightly below the smallest LR value so log scale renders correctly
+  const lrMin = Math.max(1e-12, Math.min(...lrData) / 10);
   new Chart(ctx, {
     type: 'line',
     data: {
       labels: steps,
       datasets: [{
-        data: TRAINING_DATA.metrics.map(d => d.lr),
+        data: lrData,
         borderColor: '#2980b9', borderWidth: 1.8, pointRadius: 0,
         fill: true,
         backgroundColor: makeGradient(ctx, 'rgba(41,128,185,.15)', 'rgba(41,128,185,.0)'),
@@ -478,12 +589,22 @@ const xTicks = { ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0) + 'K' :
     },
     options: {
       ...chartBase,
+      plugins: {
+        ...chartBase.plugins,
+        tooltip: {
+          ...chartBase.plugins.tooltip,
+          callbacks: {
+            label: (ctx) => `LR: ${ctx.parsed.y.toExponential(1)}`,
+          },
+        },
+      },
       scales: {
         x: { ...chartBase.scales.x, ...xTicks },
         y: {
           ...chartBase.scales.y,
           title: { ...chartBase.scales.y.title, text: 'Learning Rate' },
           type: 'logarithmic',
+          min: lrMin,
           ticks: { color: '#8899aa', callback: v => v.toExponential(0) },
         },
       },
